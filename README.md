@@ -20,10 +20,19 @@ Despite their considerable result, they only used a parametric EQ and a compress
 You can see results on [this page](https://csteinmetz1.github.io/DeepAFx-ST/) and [explaining video from youtube](https://www.youtube.com/watch?v=-ezTdjRpAvw&t=2204s&ab_channel=Music%2BAIReadingGroup)(this video is different from the video on the previous page)
 
 What have I done till now?
-Reading papers and understanding the architecture
-Read source code and shallow understanding of it.
+
+- Reading papers and understanding the architecture
+
+- Read source code and shallow understanding of it.
+
+- implementing a parametric EQ (still have some bugs)
+
+- implement reverb, distortion and chorus
+
+
 
 What I planned to do?
+
 As they only applied EQ and compressor, it is interesting for me to see how good is the proposed model for other filters like distortion and reverb. For this research, I will apply other filter1 to audio1 and audio2 then I’ll ask different models to transfer the style of filtered(audio1) to origins audio2 and will do different measurements between the system result and filtered(audio2) so I can see if the EQ and compressor are better in doing other filters or not.
 
 
