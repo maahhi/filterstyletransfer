@@ -1,5 +1,7 @@
 # filter style transfer
+
 Synthesizer final project: style transfer
+
 Mahya Khazaei
 
 This project gonna be based on [Style Transfer of Audio Effects with Differentiable Signal Processing](https://arxiv.org/abs/2207.08759). As a short summary about it, I can say this paper has done a unified implementation of a different way to pass gradient from a DSP system (differentiable audio effects).
