@@ -3,6 +3,9 @@ import soundfile as sf
 from scipy.signal import convolve
 
 def add_reverb(wav_file, output_file, room_scale=0.8, wet_level=0.5, dry_level=1.0):
+    # room scale : 0.1 - 1
+    # wet level : 0.1 -0.8
+    # dey level : 0.5 - 1
     # Load the WAV file
     data, samplerate = sf.read(wav_file)
 
