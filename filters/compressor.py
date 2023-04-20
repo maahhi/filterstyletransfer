@@ -3,7 +3,8 @@ import soundfile as sf
 from scipy.signal import lfilter
 from pydub import AudioSegment
 
-def compressor(data, samplerate, threshold, ratio, attack, release):
+def compressor(data, samplerate, threshold, ratio, attack=5, release=100):
+
     # Calculate the linear threshold value
     threshold_linear = 10 ** (threshold / 20)
 
@@ -48,13 +49,14 @@ def apply_compressor(input_file, output_file, threshold, ratio, attack, release)
     # Save the compressed audio to a new WAV file
     sf.write(output_file, compressed_data.astype(np.int16), samplerate)
 
-# Example usage:
-input_file = "1.wav"
-output_file = "1compressed.wav"
-threshold = -20  # dB
-ratio = 4        # 4:1 compression ratio
-attack = 5       # milliseconds
-release = 100    # milliseconds
 
-apply_compressor(input_file, output_file, threshold, ratio, attack, release)
+
+if __name__ == "__main__":
+    # Example usage:
+    input_file = "1.wav"
+    output_file = "1compressed.wav"
+    threshold = -20  # dB (-20,20)
+    ratio = 4        # 4:1 compression ratio (2,6)
+
+    apply_compressor(input_file, output_file, threshold, ratio)
 
