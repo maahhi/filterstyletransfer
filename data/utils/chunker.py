@@ -24,7 +24,7 @@ def split_audio_files(wav_files, smallest_duration, output_directory):
     chunk_counter = 1
     for file in wav_files:
         audio = AudioSegment.from_wav(file)
-        for i in range(0, len(audio), smallest_duration):
+        for i in range(0, len(audio), int(smallest_duration/5)):
             end_index = i + smallest_duration
             if end_index > len(audio):
                 end_index = len(audio)
@@ -38,7 +38,7 @@ def split_audio_files(wav_files, smallest_duration, output_directory):
 
 def main():
     input_directory = '../20samples'
-    output_directory = '../raw'
+    output_directory = '../raw5'
 
     wav_files = find_wav_files(input_directory)
     smallest_duration = get_smallest_duration(wav_files)

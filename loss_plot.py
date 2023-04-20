@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Read CSV file
-path_ = './model/styletransfer/eqcmp/'
+path_ = './model/proxy/eq/'
 csv_file = path_ + 'losses.csv'
 df = pd.read_csv(csv_file)
 

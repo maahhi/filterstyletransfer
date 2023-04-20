@@ -58,6 +58,7 @@ class MLP(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class MLPArchitecture(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super(MLPArchitecture, self).__init__()

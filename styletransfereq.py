@@ -10,10 +10,13 @@ from filters.proxy.proxyeq import load_saved_model as loadproxyeq
 from filters.proxy.proxyeq import generate_random_gains
 import soundfile as sf
 import os
+from filters.reverb import add_reverb
+from filters.distortion import distortion
 
 
 def custom_transform(x, min_val, max_val):
-    return min_val + (torch.sigmoid(x) * (max_val - min_val))
+    s = torch.sigmoid(x/100000)
+    return min_val + (s * (max_val - min_val))
 
 class Styletransfer(nn.Module):
     def __init__(self, encoder_architecture, mlp_architecture, cnn_pretrained):
@@ -76,7 +79,7 @@ def train_network(input_directory,modelproxy_load_path,initial_model=None):
     batch_size = 4
     input1_shape, input2_shape, output_shape = 1300, 1300, 1300
     learning_rate = 0.001
-    epochs = 400
+    epochs = 700
     losses_df = pd.DataFrame(columns=['epochs', 'MAE', 'MRSTFT'])
     fparam_df = pd.DataFrame(columns=['epochs', 'eq1','eq2','eq3','eq4','eq5','eq6',
                                       'eseq1','eseq2','eseq3','eseq4','eseq5','eseq6'])
@@ -140,22 +143,76 @@ def load_saved_model(model_load_path,modelproxy_load_path):
     loaded_model.load_state_dict(model_state_dict)
     return loaded_model
 
+def randomfilter_reverb(audiopath):
+    # room scale : 0.1 - 1
+    # wet level : 0.1 -0.8
+    # dey level : 0.5 - 1
+    gains = generate_random_gains()
+    processed_audio = add_reverb(audiopath, '', room_scale=random.uniform(0.1,1), wet_level=random.uniform(0.1,0.8), dry_level=random.uniform(0.5,1))
+    return processed_audio,gains
+
+def randomfilter_distort(audiopath):
+    gain = random.randint(1,20) #should be in 1-20
+    threshold = random.uniform(0,1)#should be in 0-1
+    gains = generate_random_gains()
+    processed_audio = distortion(audiopath, '', gain, threshold)
+    return processed_audio,gains
+
+def Validate(input_directory,model):
+    losses_df = pd.DataFrame(columns=['epochs', 'MAE', 'MRSTFT'])
+    wav_files = load_wav_files(input_directory)
+    for i in range(70):
+        input_wav_file = random.choice(wav_files)
+        input1, sample_rate = sf.read(input_wav_file)
+        #filtered, filter_parameter = randomfilter_reverb(input_wav_file)#randomfilter(input_wav_file)
+        filtered, filter_parameter = randomfilter_distort(input_wav_file)
+        input2 = filtered
+        n_fft = 2048
+        hop_length = 256
+        device = "cpu"
+        input1_ts = torch.tensor(input1).float().to(device)
+        input2_ts = torch.tensor(input2).float().to(device)
+        input1a, input1b = torch.split(input1_ts, int(input1_ts.shape[0] / 2))
+        input2a, input2b = torch.split(input2_ts, int(input2_ts.shape[0] / 2))
+        input2a = input2a.unsqueeze(0)
+
+        input1a_stft = (torch.stft(input1a, n_fft=n_fft, hop_length=hop_length,
+                                   window=torch.hann_window(n_fft).to(device))).permute(2, 0, 1).unsqueeze(0)
+        input2b_stft = (torch.stft(input2b, n_fft=n_fft, hop_length=hop_length,
+                                   window=torch.hann_window(n_fft).to(device))).permute(2, 0, 1).unsqueeze(0)
+
+        output, estimated_parameters = model(input1a_stft, input2b_stft, input1a.unsqueeze(0))
+
+        # Calculate loss
+        loss1 = mae_loss(output, input2a)
+        loss2 = mr_stft_loss(output.squeeze(1).detach().numpy(), input2a.squeeze(1).detach().numpy(), sample_rate)
+        losses_df.loc[len(losses_df)] = [i, loss1.detach().numpy(), loss2]
+    return losses_df
+
+
 if __name__ == "__main__":
-    input_directory = "../../data/raw"
+    input_directory = "./data/raw5/"
     modelproxy_load_path ="./model/proxy/eq/30000"
+
+
     # Load the saved model
     if os.path.exists("./model/styletransfer/eq/1000"):
-        model_load_path = "./model/styletransfer/eq/1000"
+        model_load_path = "./model/styletransfer/eq/1300"
         print('load model')
         loaded_model = load_saved_model(model_load_path,modelproxy_load_path)
+        validate = True
+        if validate:
+            losses_df_val = Validate(input_directory, loaded_model)
+            losses_df_val.to_csv("./model/styletransfer/eq/losses_val_dist.csv", index=False)
+            print("end of validation")
         # Continue training the model
         print("model loaded")
-        model,losses,fparam_df = train_network("./data/raw/",modelproxy_load_path,initial_model=loaded_model)
+        model,losses,fparam_df = train_network(input_directory,modelproxy_load_path,initial_model=loaded_model)
     else:
-        model,losses,fparam_df = train_network("./data/raw/",modelproxy_load_path,initial_model=None)
+        model,losses,fparam_df = train_network(input_directory,modelproxy_load_path,initial_model=None)
 
     # Save the continued model
-    model_save_path = "./model/styletransfer/eq/1400"
+    model_save_path = "./model/styletransfer/eq/2000"
     isExist = os.path.exists("./model/styletransfer/eq/")
     if not isExist:
         # Create a new directory because it does not exist

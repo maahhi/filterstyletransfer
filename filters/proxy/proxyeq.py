@@ -122,44 +122,84 @@ def train_network(input_directory, equalizer_function, epochs=10000, learning_ra
             print(f'Epoch: {epoch}, Loss: {loss.item()}')
     return model,losses_df
 
+
+def Validation(input_directory,model):
+    losses_df = pd.DataFrame(columns=['epochs', 'MAE', 'MRSTFT'])
+    wav_files = load_wav_files(input_directory)
+    print('validation')
+
+    for i in range(70):
+        input_wav_file = random.choice(wav_files)
+        audio_data, sample_rate = sf.read(input_wav_file)
+        gains = generate_random_gains()
+        processed_audio = equalizer(input_wav_file, gains)
+        input_data = process_audio(audio_data, gains)
+        input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+        target_tensor = torch.tensor(processed_audio, dtype=torch.float32).unsqueeze(0)
+        output = model(input_tensor)
+        loss1 = mae_loss(target_tensor, output)
+        loss2 = mr_stft_loss(target_tensor.squeeze(1).detach().numpy(), output.squeeze(1).detach().numpy(), sample_rate)
+        losses_df.loc[len(losses_df)] = [i, loss1.detach().numpy(), loss2]
+    input_wav_file = "../../data/raw5/202.wav"
+    audio_data, sample_rate = sf.read(input_wav_file)
+    output_file = "./202-r5.wav"
+    sf.write(output_file, audio_data, samplerate=24000)
+    Gains = [-10,-10,-10,-10,10,10]
+    processed_audio = equalizer(input_wav_file, Gains)
+    output_file = "./202-r5-filtered.wav"
+    sf.write(output_file, processed_audio, samplerate=24000)
+    input_data = process_audio(audio_data, Gains)
+    input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+    output = model(input_tensor)
+    output_file = "./202-r5-proxied.wav"
+    sf.write(output_file, output.squeeze(1).detach().numpy()[0], samplerate=24000)
+    return losses_df
+
+
 if __name__ == "__main__":
+    validation = True
 
     input_directory = "../../data/raw"
 
     # Load the saved model
-    model_load_path = "../../model/proxy/eq/20000"
+    model_load_path = "../../model/proxy/eq/30000"
     loaded_model = load_saved_model(model_load_path)
 
-    # Continue training the model
-    continued_model,lossesdf = train_network(input_directory, equalizer, initial_model=loaded_model)
-    """
-    continued_model, lossesdf = train_network(input_directory, equalizer, initial_model=None)
-    """
-    # Save the continued model
-    model_save_path = "../../model/proxy/eq/30000"
-    torch.save(continued_model.state_dict(), model_save_path)
-
-    if os.path.exists("../../model/proxy/eq/losses.csv"):
-        df = pd.read_csv("../../model/proxy/eq/losses.csv")
-        newdf = pd.concat([df,lossesdf])
-        newdf.to_csv("../../model/proxy/eq/losses.csv",index=False)
-
+    if validation:
+        print("validation")
+        losses_df_val = Validation("../../data/raw5",loaded_model)
+        losses_df_val.to_csv("../../model/proxy/eq/losses_val.csv", index=False)
     else:
-        lossesdf.to_csv("../../model/proxy/eq/losses.csv",index=False)
+        # Continue training the model
+        continued_model, lossesdf = train_network(input_directory, equalizer, initial_model=loaded_model)
+        """
+        continued_model, lossesdf = train_network(input_directory, equalizer, initial_model=None)
+        """
+        # Save the continued model
+        model_save_path = "../../model/proxy/eq/40000"
+        torch.save(continued_model.state_dict(), model_save_path)
 
-"""
-    # Use the trained model
-    input_wav_file = "../../data/raw/20.wav"  # Replace with the desired input WAV file path
-    audio_data, sample_rate = sf.read(input_wav_file)
-    gains = [-20,20,-20,-20,-20,-20]  # generate_random_gains()
+        if os.path.exists("../../model/proxy/eq/losses.csv"):
+            df = pd.read_csv("../../model/proxy/eq/losses.csv")
+            newdf = pd.concat([df,lossesdf])
+            newdf.to_csv("../../model/proxy/eq/losses.csv",index=False)
 
-    input_data = process_audio(audio_data, gains)
-    input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+        else:
+            lossesdf.to_csv("../../model/proxy/eq/losses.csv",index=False)
 
-    output_tensor = continued_model(input_tensor)
-    output_audio_data = output_tensor.squeeze(1).detach().numpy()
-
-    #Save the output audio data to a new WAV file
-    output_file = "../../out20.wav"
-    sf.write(output_file, output_audio_data[0],samplerate=24000)
-"""
+    """
+        # Use the trained model
+        input_wav_file = "../../data/raw/20.wav"  # Replace with the desired input WAV file path
+        audio_data, sample_rate = sf.read(input_wav_file)
+        gains = [-20,20,-20,-20,-20,-20]  # generate_random_gains()
+    
+        input_data = process_audio(audio_data, gains)
+        input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+    
+        output_tensor = continued_model(input_tensor)
+        output_audio_data = output_tensor.squeeze(1).detach().numpy()
+    
+        #Save the output audio data to a new WAV file
+        output_file = "../../out20.wav"
+        sf.write(output_file, output_audio_data[0],samplerate=24000)
+    """
