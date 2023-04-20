@@ -21,9 +21,10 @@ def distortion(wav_file, output_file, gain, threshold):
     processed_data = (data * 32767).astype(np.int16)
 
     # Save the processed data to a new WAV file
-    wavfile.write(output_file, samplerate, processed_data)
+    #wavfile.write(output_file, samplerate, processed_data)
+    return processed_data
 
 # Example usage:
-gain = 10 #should be in 1-20
-threshold = 0.4#should be in 0-1
-distortion("mug1.wav", "output_distorted.wav", gain, threshold)
+#gain = 10 #should be in 1-20
+#threshold = 0.4#should be in 0-1
+#distortion("mug1.wav", "output_distorted.wav", gain, threshold)

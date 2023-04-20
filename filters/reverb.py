@@ -27,7 +27,8 @@ def add_reverb(wav_file, output_file, room_scale=0.8, wet_level=0.5, dry_level=1
     processed_data = dry_level * padded_data + wet_level * reverb_data
 
     # Save the processed data to a new WAV file
-    sf.write(output_file, processed_data, samplerate)
+    #sf.write(output_file, processed_data, samplerate)
+    return processed_data[:len(data)]
 
 # Example usage:
-add_reverb("mug1.wav", "output_reverb.wav", room_scale=0.8, wet_level=0.5, dry_level=1.0)
+#add_reverb("mug1.wav", "output_reverb.wav", room_scale=0.8, wet_level=0.5, dry_level=1.0)
